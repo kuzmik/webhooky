@@ -15,13 +15,13 @@ export default class extends Controller {
       }
     )
     this.boundKeydown = this.handleKeydown.bind(this)
-    document.addEventListener("keydown", this.boundKeydown)
+    document.addEventListener("keydown", this.boundKeydown, true)
   }
 
   disconnect() {
     if (this.subscription) this.subscription.unsubscribe()
     if (this.consumer) this.consumer.disconnect()
-    document.removeEventListener("keydown", this.boundKeydown)
+    document.removeEventListener("keydown", this.boundKeydown, true)
   }
 
   handleKeydown(event) {
