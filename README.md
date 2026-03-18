@@ -1,24 +1,24 @@
-# README
+# Webhooky
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A local webhook capture and inspection tool. Send HTTP requests to a unique URL and see them appear in real-time.
 
-Things you may want to cover:
+## Setup
 
-* Ruby version
+```bash
+bin/setup
+bin/rails db:migrate
+```
 
-* System dependencies
+## Run
 
-* Configuration
+```bash
+bin/rails server
+```
 
-* Database creation
+Visit http://localhost:3000 and click "Create New URL".
 
-* Database initialization
+## Test
 
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+```bash
+bin/rails test
+```
