@@ -40,7 +40,7 @@ class WebhookRequestTest < ActiveSupport::TestCase
     assert_includes req.errors[:ip], "can't be blank"
   end
 
-  test "orders by created_at desc by default" do
+  test "can order by created_at desc" do
     old = @token.webhook_requests.create!(
       method_name: "GET", url: "/1", ip: "1.1.1.1",
       hostname: "localhost", headers: "{}", query: "{}", content_size: 0,
