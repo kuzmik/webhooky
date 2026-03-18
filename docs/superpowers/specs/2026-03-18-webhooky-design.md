@@ -70,19 +70,20 @@ Index on `token_id` + `created_at DESC` for efficient listing.
 ## Routing
 
 ```
-GET  /                           → Creates new token, redirects to /tokens/:uuid
+GET  /                           → Landing page with "Create New URL" button
+POST /tokens                     → Creates new token, redirects to /tokens/:uuid
 GET  /tokens/:uuid               → Main UI (request list + detail)
-GET  /tokens/:uuid/requests      → JSON: paginated request list
+GET  /tokens/:uuid/requests      → JSON: request list (50 per page, offset-based)
 GET  /tokens/:uuid/requests/:id  → JSON: single request detail
 DELETE /tokens/:uuid/requests/:id → Delete one request
-DELETE /tokens/:uuid/requests     → Delete all requests for token
+DELETE /tokens/:uuid/requests     → Delete all requests for token (with JS confirm())
 PUT  /tokens/:uuid               → Update token settings
 
 ANY  /:uuid                      → Capture webhook (all HTTP methods)
 ANY  /:uuid/:status              → Capture webhook with status override
 ```
 
-A routing constraint validates the `:uuid` segment matches UUID format, preventing conflicts with app routes.
+A routing constraint validates the `:uuid` segment matches UUID v4 format (`/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i`), preventing conflicts with app routes. All UUID examples in the UI use full 36-character UUIDs (e.g., `550e8400-e29b-41d4-a716-446655440000`).
 
 ## Webhook Capture Flow
 
@@ -93,8 +94,10 @@ A routing constraint validates the `:uuid` segment matches UUID format, preventi
 5. Broadcasts to ActionCable channel `token_<uuid>` with request data
 6. Returns the token's configured response (status, content-type, body)
 7. If `:status` path segment present, overrides status code
-8. If token has `timeout` set, sleeps before responding (max 30s)
+8. If token has `timeout` set, sleeps before responding (max 10s, to limit thread pool pressure)
 9. If token has `cors` enabled, adds CORS headers
+
+**Thread pool note:** The `timeout` feature blocks a Puma thread. With Puma's default 5-thread pool, this limits concurrent slow responses. Acceptable for local/dev use. For production, increase `RAILS_MAX_THREADS` or remove the timeout feature.
 
 ## Real-Time Updates (ActionCable)
 
@@ -130,14 +133,14 @@ If serialized payload exceeds 100KB, `content` and `headers` are omitted and a `
 +----------------------------------------------------------+
 | [Logo: Webhooky]                        [+ New URL]      |
 +----------------------------------------------------------+
-| Your URL: https://localhost:3000/abc123-...  [Copy]      |
+| Your URL: http://localhost:3000/550e8400-...  [Copy]     |
 | Status: [200] Content-Type: [application/json] Body: ... |
 +---------------------------+------------------------------+
-| Requests (42)       [Del] | POST /abc123-...             |
+| Requests (42)  [Delete All]| POST /550e8400-...          |
 |                           | 192.168.1.1 · 2 min ago      |
-| ● POST /abc123  2m ago   |                              |
-|   GET  /abc123  5m ago   | Headers                      |
-|   PUT  /abc123  8m ago   |   Content-Type: application… |
+| ● POST 550e84  2m ago    |                              |
+|   GET  550e84  5m ago    | Headers                      |
+|   PUT  550e84  8m ago    |   Content-Type: application… |
 |                           |   User-Agent: curl/8.0       |
 |                           |                              |
 |                           | Query String                 |
@@ -165,6 +168,34 @@ If serialized payload exceeds 100KB, `content` and `headers` are omitted and a `
 - `requests_controller` — manages request list, selection state, ActionCable subscription
 - `request_detail_controller` — displays selected request, fetches full data if truncated
 - `flash_controller` — shows copy confirmation and other transient messages
+
+## Retention & Cleanup
+
+- Max 500 requests per token. On capture, if count exceeds 500, delete oldest.
+- No automatic token expiry (tokens persist until server/DB is reset).
+- Cleanup happens inline during webhook capture (delete oldest before insert).
+
+## SQLite Configuration
+
+- Enable WAL mode for better concurrent read/write performance
+- Set `busy_timeout` to 5000ms to handle write contention gracefully
+- Configured in `database.yml` or an initializer
+
+## Frontend Architecture (Turbo + Stimulus)
+
+- **Turbo Frames** are NOT used for real-time updates. The main UI is a single server-rendered page.
+- **ActionCable + Stimulus** handles real-time: the `requests_controller` Stimulus controller subscribes to the token's ActionCable channel and manually prepends new request items to the DOM when broadcasts arrive.
+- **Turbo** is used only for standard navigation (page transitions, form submissions).
+- The request list is rendered server-side on initial load. Subsequent requests are added client-side via the Stimulus controller receiving ActionCable JSON and building DOM elements.
+- Clicking a request in the left panel updates the right panel client-side (no server round-trip for selection). If the request was truncated in the broadcast, a fetch() call loads the full data.
+
+## `form_data` Column
+
+Populated only when the request Content-Type is `application/x-www-form-urlencoded` or `multipart/form-data`. Otherwise null. Displayed in the detail panel as a "Form Data" section only when present.
+
+## CORS on API Routes
+
+The JSON API routes (`/tokens/:uuid/requests`, etc.) are same-origin only — consumed by the Hotwire frontend on the same domain. No CORS headers needed on API routes.
 
 ## Error Handling
 
