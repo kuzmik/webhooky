@@ -1,14 +1,15 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  root "home#index"
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
-  get "up" => "rails/health#show", as: :rails_health_check
+  resources :tokens, only: [:create], param: :uuid do
+    resources :requests, only: [:index, :show, :destroy], controller: "requests", param: :uuid
+    delete "requests", to: "requests#destroy_all", on: :member
+    put "", to: "tokens#update", on: :member
+  end
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  get "tokens/:uuid", to: "tokens#show", as: :token, constraints: { uuid: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i }
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Webhook capture — catch-all, must be last
+  match ":uuid(/:status)", to: "webhooks#capture", via: :all,
+    constraints: { uuid: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i, status: /[1-5]\d{2}/ }
 end
