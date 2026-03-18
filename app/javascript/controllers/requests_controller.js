@@ -14,11 +14,36 @@ export default class extends Controller {
         received: (data) => this.handleNewRequest(data)
       }
     )
+    this.boundKeydown = this.handleKeydown.bind(this)
+    document.addEventListener("keydown", this.boundKeydown)
   }
 
   disconnect() {
     if (this.subscription) this.subscription.unsubscribe()
     if (this.consumer) this.consumer.disconnect()
+    document.removeEventListener("keydown", this.boundKeydown)
+  }
+
+  handleKeydown(event) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return
+    // Don't hijack arrows when typing in an input
+    if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA") return
+
+    event.preventDefault()
+    const items = Array.from(this.listTarget.querySelectorAll(".request-item"))
+    if (items.length === 0) return
+
+    const currentIndex = items.findIndex(el => el.classList.contains("selected"))
+    let nextIndex
+
+    if (event.key === "ArrowUp") {
+      nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1
+    } else {
+      nextIndex = currentIndex >= items.length - 1 ? items.length - 1 : currentIndex + 1
+    }
+
+    items[nextIndex].click()
+    items[nextIndex].scrollIntoView({ block: "nearest" })
   }
 
   handleNewRequest(data) {
