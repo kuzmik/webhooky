@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_18_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_18_000002) do
   create_table "tokens", primary_key: "uuid", id: { type: :string, limit: 36 }, force: :cascade do |t|
     t.boolean "cors", default: true, null: false
     t.datetime "created_at", null: false
@@ -20,4 +20,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_18_000001) do
     t.integer "timeout"
     t.datetime "updated_at", null: false
   end
+
+  create_table "webhook_requests", primary_key: "uuid", id: { type: :string, limit: 36 }, force: :cascade do |t|
+    t.text "content"
+    t.integer "content_size", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.text "form_data"
+    t.text "headers"
+    t.string "hostname"
+    t.string "ip", null: false
+    t.string "method_name", null: false
+    t.text "query"
+    t.string "token_id", limit: 36, null: false
+    t.text "url", null: false
+    t.index ["token_id", "created_at"], name: "index_webhook_requests_on_token_id_and_created_at", order: { created_at: :desc }
+  end
+
+  add_foreign_key "webhook_requests", "tokens", primary_key: "uuid"
 end
