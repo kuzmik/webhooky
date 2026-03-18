@@ -161,6 +161,14 @@ main {
   padding: 0;
 }
 
+/* ─── Token Page Container ──────────────────────────────────────────────────── */
+.token-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ─── URL Bar ───────────────────────────────────────────────────────────────── */
 .url-bar {
   background: var(--panel-bg);
