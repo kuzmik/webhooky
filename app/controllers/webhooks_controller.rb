@@ -10,7 +10,7 @@ class WebhooksController < ApplicationController
 
     body = request.raw_post || ""
     if body.bytesize > MAX_BODY_SIZE
-      return head(:payload_too_large)
+      return head(:content_too_large)
     end
 
     headers_hash = extract_headers(request)
