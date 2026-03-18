@@ -1,1 +1,66 @@
-<h1>Token: <%= @token.uuid %></h1>
+<div class="token-page" data-controller="requests clipboard" data-requests-token-uuid-value="<%= @token.uuid %>" data-requests-requests-url-value="<%= "/tokens/#{@token.uuid}/requests" %>">
+  <%# URL Bar %>
+  <div class="url-bar">
+    <div class="url-display">
+      <label>Your URL:</label>
+      <code data-clipboard-target="source" id="webhook-url"><%= request.base_url %>/<%= @token.uuid %></code>
+      <button class="btn btn-copy" data-action="click->clipboard#copy" data-clipboard-target="button">Copy</button>
+    </div>
+    <div class="settings-row" data-controller="settings" data-settings-token-uuid-value="<%= @token.uuid %>">
+      <label>Status:</label>
+      <input type="number" value="<%= @token.default_status %>" data-settings-target="status" min="100" max="599">
+      <label>Content-Type:</label>
+      <input type="text" value="<%= @token.default_content_type %>" data-settings-target="contentType">
+      <label>Body:</label>
+      <input type="text" value="<%= @token.default_content %>" data-settings-target="content" style="flex:1;">
+      <button class="btn btn-save" data-action="click->settings#save">Save</button>
+    </div>
+  </div>
+
+  <%# Split Pane %>
+  <div class="split-pane">
+    <%# Left: Request List %>
+    <div class="request-list-panel">
+      <div class="request-list-header">
+        <span>Requests (<span data-requests-target="count"><%= @token.webhook_requests.count %></span>)</span>
+        <button class="btn-delete-all" data-action="click->requests#deleteAll">Delete All</button>
+      </div>
+      <ul class="request-list" data-requests-target="list">
+        <% @token.webhook_requests.order(created_at: :desc).limit(50).each do |req| %>
+          <%
+            req_data = {
+              uuid: req.uuid,
+              method_name: req.method_name,
+              url: req.url,
+              ip: req.ip,
+              created_at: req.created_at.iso8601,
+              headers: req.headers,
+              query: req.query,
+              content: req.content,
+              form_data: req.form_data,
+              content_size: req.content_size
+            }.to_json
+          %>
+          <li class="request-item"
+              data-action="click->requests#select"
+              data-request-json="<%= h req_data %>">
+            <span class="method-badge method-<%= req.method_name.downcase %>"><%= req.method_name %></span>
+            <div class="request-item-info">
+              <div class="request-item-path"><%= req.ip %></div>
+              <div class="request-item-time"><%= time_ago_in_words(req.created_at) %> ago</div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+
+    <%# Right: Detail %>
+    <div class="request-detail-panel" data-requests-target="detail">
+      <div class="empty-state">
+        <h2>No request selected</h2>
+        <p>Send a webhook to your URL to get started:</p>
+        <code>curl -X POST -H "Content-Type: application/json" \<br>  -d '{"event":"test"}' \<br>  <%= request.base_url %>/<%= @token.uuid %></code>
+      </div>
+    </div>
+  </div>
+</div>

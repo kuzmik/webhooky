@@ -1,24 +1,26 @@
-# README
+# Webhooky
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+I couldn't get the webhook.site docker image to actually start up, so... here is a local webhook capture and inspection tool. Send HTTP requests to a unique URL and see them appear in real-time.
 
-Things you may want to cover:
+This 100% AI generated, this is used on my laptop for testing other software; do not run this anywhere you care about, for the love of god. I am not proud of this, but it solves a problem I personally had.
 
-* Ruby version
+## Setup
 
-* System dependencies
+```bash
+bin/setup
+bin/rails db:migrate
+```
 
-* Configuration
+## Run
 
-* Database creation
+```bash
+bin/rails server
+```
 
-* Database initialization
+Visit http://localhost:3000 and click "Create New URL".
 
-* How to run the test suite
+## Test
 
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+```bash
+bin/rails test
+```
